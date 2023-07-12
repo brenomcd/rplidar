@@ -1,13 +1,16 @@
-#! /usr/bin/python3
+#!/usr/bin/python
 
 import rospy
 from sensor_msgs.msg import LaserScan
+#from geometry_msgs.msg import Twist
 from std_msgs.msg import String
 from std_msgs.msg import Float32
 
 import math
 import numpy as np
 from sklearn.cluster import DBSCAN
+import matplotlib.pyplot as plt
+import math
 import time
 
 class LegL():
@@ -24,14 +27,17 @@ class LegL():
 	def initParameters(self):
 		self.LegMonitoringTopic = self.rospy.get_param("~LegMonitoring_topic","/scan_rplidar")
 		self.controlRate = self.rospy.get_param("~control_rate", 100)
-		self.angle_min_new = self.rospy.get_param("~angle_min_new", 185)
-		self.angle_max_new = self.rospy.get_param("~angle_min_new", 215)
+		self.angle_min_new = self.rospy.get_param("~angle_min_new",155)
+		self.angle_max_new = self.rospy.get_param("~angle_min_new",215)
 		return
 
 	def initPublishers(self):
 		self.pubDist = self.rospy.Publisher("/distance", Float32, queue_size=10)
 		self.pubDistF = self.rospy.Publisher("/distanceF", Float32, queue_size=10)
-		self.pub_dist_pernas = self.rospy.Publisher("/dist_pernas", String, queue_size=10)
+		self.pubDistPerna1 = self.rospy.Publisher("/dist_perna1", Float32, queue_size=10)
+		self.pubDistPerna2 = self.rospy.Publisher("/dist_perna2", Float32, queue_size=10)
+		self.pubVelPerna1 = self.rospy.Publisher("/vel_perna1", Float32, queue_size=10)
+		self.pubVelPerna1 = self.rospy.Publisher("/vel_perna2", Float32, queue_size=10)
 		return
 
 	def initSubscribers(self):
@@ -61,6 +67,19 @@ class LegL():
 		self.mediaX = 0
 		self.mediaY = 0
 		self.k = 0
+		
+		#BRENO
+		###################
+		self.perna1 = 0
+		self.velo_perna1 = 0
+		self.distAntP1 = 0
+		self.distAtualP1 = 0
+
+		self.perna2 = 0
+		self.velo_perna2 = 0
+		self.distAntP2 = 0
+		self.distAtualP2 = 0
+		####################
 		"""----------------------------------  """
 
 		#vetor com os parametros da formacao.
@@ -90,10 +109,8 @@ class LegL():
 		IDX = clustering.labels_
 		#plot dos dados
 		k = np.max(IDX)
-
-		perna1 = 0
-
-		contador = 0
+		#ramdom das cores
+		cmap = plt.cm.get_cmap('hsv', 4)
 
 		#gera a variavel das medias
 		medias = []
@@ -103,23 +120,55 @@ class LegL():
 			mediaX = np.mean(Xj[:,0])
 			mediaY = np.mean(Xj[:,1])
 			medias.append([mediaX,mediaY])
-			if mediaX != 0:
-				if contador == 0:
-					perna1 = mediaX*-1
-					contador = 1
+			stilo = '.'
+			color = cmap(j)
+			plt.scatter(Xj[:,0],Xj[:,1], c=color, marker=stilo)
+			plt.text(mediaX, mediaY, 'leg ' + str(j+1), fontdict=self.font)
+			plt.xlim([0, 1])
+			plt.ylim([-0.5, 0.5])
+		
+			#BRENO
+			###################
+			perna1X = mediaX[0]
+			perna1Y = mediaY[0]
+			perna2X = mediaX[1]
+			perna2Y = mediaY[1]
+			###################
 
 		if medias != []:
 			mediasArray = np.array(medias)
 			self.mediaX = np.mean(mediasArray[:,0])
 			self.mediaY = np.mean(mediasArray[:,1])
+			plt.text(self.mediaX, self.mediaY, '*', fontdict=self.font)
+			plt.text(self.mediaX+0.02, self.mediaY, 'Person', fontdict=self.font)
 			self.amostras[1]=[self.mediaX, self.mediaY]
 			self.distAnt = math.sqrt(math.pow(self.amostras[0][0],2)+math.pow(self.amostras[0][1],2))
 			self.distAtual = math.sqrt(math.pow(self.amostras[1][0],2)+math.pow(self.amostras[1][1],2))
+			
+			#BRENO
+			##########################
+			self.perna1 = math.sqrt(math.pow(perna1X,2)+math.pow(perna1Y,2)) 
+			self.distAtualP1 = self.perna1
+
+			self.perna2 = math.sqrt(math.pow(perna2X,2)+math.pow(perna2Y,2)) 
+			self.distAtualP2 = self.perna2
+			##########################
+
 			self.end = time.time()
 			tempo = (self.end-self.start)
 			self.veloc.append((self.distAtual-self.distAnt)/(tempo*10))
 
 			self.amostras[0] = self.amostras[1]
+			
+			#BRENO
+			####################
+			self.velo_perna1 = (self.distAtualP1-self.distAntP1)/(tempo*10)
+			self.velo_perna2 = (self.distAtualP2-self.distAntP2)/(tempo*10)
+
+			self.distAntP1 = self.distAtualP1
+			self.distAntP2 = self.distAtualP2
+
+			####################
 
 			msg1 = Float32()
 			msg1.data = self.mediaX
@@ -127,15 +176,27 @@ class LegL():
 			msg2 = Float32()
 			msg2.data = self.qDes[0]
 			self.pubDistF.publish(msg2)
-			msg3 = String()
-			msg3.data = "perna 1: " + str(perna1) + ";" + "perna 2: " + str(abs(self.mediaX*2) - perna1)
-			self.pub_dist_pernas.publish(msg3)
-		
+
+			#BRENO
+			##############
+			msg3 = Float32()
+			msg3.data = self.perna1
+			self.pubDistPerna1.publish(msg3)
+			msg4 = Float32()
+			msg4.data = self.perna2
+			self.pubDistPerna2.publish(msg4)
+			msg5 = Float32()
+			msg5.data = self.velo_perna1
+			self.pubVelPerna1.publish(msg5)
+			msg6 = Float32()
+			msg6.data = self.velo_perna2
+			self.pubVelPerna2.publish(msg6)
+			###############
 
 		return
 
 	def mainControl(self):
-		#plt.ion()
+		plt.ion()
 		while not self.rospy.is_shutdown():
 			self.msg = LaserScan()
 			if self.change:
@@ -165,6 +226,10 @@ class LegL():
 					msg1 = Float32()
 					msg1.data = 0
 					self.pubDist.publish(msg1)
+
+				plt.grid()
+				plt.pause(0.0001)
+				plt.clf()
 
 				self.change = False
 
