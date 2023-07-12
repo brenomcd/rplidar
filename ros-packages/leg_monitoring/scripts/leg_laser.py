@@ -9,10 +9,10 @@ from std_msgs.msg import Float32
 import math
 import numpy as np
 from sklearn.cluster import DBSCAN
-from scipy import signal
-from collections import deque
+# from scipy import signal
+# from collections import deque
 # from flcfilters import FLC, WFLC, BMFLC, EBMFLC, BMWFLC
-import matplotlib.pyplot as plt
+# import matplotlib.pyplot as plt
 import math
 import time
 
