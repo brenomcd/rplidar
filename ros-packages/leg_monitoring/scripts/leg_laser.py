@@ -9,7 +9,6 @@ from std_msgs.msg import Float32
 import math
 import numpy as np
 from sklearn.cluster import DBSCAN
-import matplotlib.pyplot as plt
 import math
 import time
 
@@ -109,8 +108,6 @@ class LegL():
 		IDX = clustering.labels_
 		#plot dos dados
 		k = np.max(IDX)
-		#ramdom das cores
-		cmap = plt.cm.get_cmap('hsv', 4)
 
 		#gera a variavel das medias
 		medias = []
@@ -120,12 +117,6 @@ class LegL():
 			mediaX = np.mean(Xj[:,0])
 			mediaY = np.mean(Xj[:,1])
 			medias.append([mediaX,mediaY])
-			stilo = '.'
-			color = cmap(j)
-			plt.scatter(Xj[:,0],Xj[:,1], c=color, marker=stilo)
-			plt.text(mediaX, mediaY, 'leg ' + str(j+1), fontdict=self.font)
-			plt.xlim([0, 1])
-			plt.ylim([-0.5, 0.5])
 		
 			#BRENO
 			###################
@@ -139,8 +130,6 @@ class LegL():
 			mediasArray = np.array(medias)
 			self.mediaX = np.mean(mediasArray[:,0])
 			self.mediaY = np.mean(mediasArray[:,1])
-			plt.text(self.mediaX, self.mediaY, '*', fontdict=self.font)
-			plt.text(self.mediaX+0.02, self.mediaY, 'Person', fontdict=self.font)
 			self.amostras[1]=[self.mediaX, self.mediaY]
 			self.distAnt = math.sqrt(math.pow(self.amostras[0][0],2)+math.pow(self.amostras[0][1],2))
 			self.distAtual = math.sqrt(math.pow(self.amostras[1][0],2)+math.pow(self.amostras[1][1],2))
@@ -196,7 +185,6 @@ class LegL():
 		return
 
 	def mainControl(self):
-		plt.ion()
 		while not self.rospy.is_shutdown():
 			self.msg = LaserScan()
 			if self.change:
@@ -226,10 +214,6 @@ class LegL():
 					msg1 = Float32()
 					msg1.data = 0
 					self.pubDist.publish(msg1)
-
-				plt.grid()
-				plt.pause(0.0001)
-				plt.clf()
 
 				self.change = False
 
