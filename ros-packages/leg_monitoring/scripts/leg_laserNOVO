@@ -34,6 +34,10 @@ class LegL():
 	def initPublishers(self):
 		self.pubDist = self.rospy.Publisher("/distance", Float32, queue_size=10)
 		self.pubDistF = self.rospy.Publisher("/distanceF", Float32, queue_size=10)
+		self.pubDistPerna1 = self.rospy.Publisher("/dist_perna1", Float32, queue_size=10)
+		self.pubDistPerna2 = self.rospy.Publisher("/dist_perna2", Float32, queue_size=10)
+		self.pubVelPerna1 = self.rospy.Publisher("/vel_perna1", Float32, queue_size=10)
+		self.pubVelPerna1 = self.rospy.Publisher("/vel_perna2", Float32, queue_size=10)
 		return
 
 	def initSubscribers(self):
@@ -177,16 +181,16 @@ class LegL():
 			##############
 			msg3 = Float32()
 			msg3.data = self.perna1
-			self.pubDist.publish(msg3)
+			self.pubDistPerna1.publish(msg3)
 			msg4 = Float32()
 			msg4.data = self.perna2
-			self.pubDist.publish(msg4)
+			self.pubDistPerna2.publish(msg4)
 			msg5 = Float32()
 			msg5.data = self.velo_perna1
-			self.pubDist.publish(msg5)
+			self.pubVelPerna1.publish(msg5)
 			msg6 = Float32()
 			msg6.data = self.velo_perna2
-			self.pubDist.publish(msg6)
+			self.pubVelPerna2.publish(msg6)
 			###############
 
 		return
